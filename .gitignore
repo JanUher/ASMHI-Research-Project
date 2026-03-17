@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data
+data/raw/
+data/interim/
+data/processed/
+
+# Results
+results/figures/
+results/metrics/
+results/tables/
+
+# Audio / model artifacts
+*.wav
+*.mp3
+*.flac
+*.pt
+*.pth
+*.pkl
+*.joblib
+*.h5
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db
