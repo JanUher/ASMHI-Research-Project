@@ -13,10 +13,6 @@ env/
 .ipynb_checkpoints/
 
 
-# Results
-results/figures/
-results/metrics/
-results/tables/
 
 # Audio / model artifacts
 *.wav
