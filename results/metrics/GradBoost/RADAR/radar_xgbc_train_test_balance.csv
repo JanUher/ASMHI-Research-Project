@@ -1,0 +1,2 @@
+comparison,train_n,test_n,train_control,train_depressed,test_control,test_depressed,chi2,p_value
+train_vs_test,6570,1945,3625,2945,1278,667,67.72072113882764,1.8837341393152007e-16
