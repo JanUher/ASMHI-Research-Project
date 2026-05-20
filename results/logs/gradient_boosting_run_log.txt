@@ -1,0 +1,444 @@
+Gradient Boosting notebook run log
+Started: 2026-05-19 13:58:34.246440
+
+Saving full notebook output to: C:\Users\janku\Documents\KCL\Research Project\Research Project\results\logs\gradient_boosting_run_log.txt
+
+================================================================================
+MODEL SECTION: RADAR GBR
+================================================================================
+
+Train rows: 6570
+Test rows: 1945
+Train participants: 219
+Test participants: 55
+
+Train/Test PHQ-8 balance:
+      comparison  train_n  test_n  train_mean_phq8  train_median_phq8  \
+0  train_vs_test     6570    1945          9.28828                9.0   
+
+   test_mean_phq8  test_median_phq8  kruskal_H       p_value  
+0         8.19126               7.0  54.532593  1.528910e-13  
+Best GBR params from GridSearchCV: {'learning_rate': 0.03, 'max_depth': 2, 'n_estimators': 100}
+  Wilcoxon p (|y-ŷ| GBR vs |y-ȳ_train|) fold 1: 1.0559252370662983e-10
+  Wilcoxon p (|y-ŷ| GBR vs |y-ȳ_train|) fold 2: 0.023064392917008823
+  Wilcoxon p (|y-ŷ| GBR vs |y-ȳ_train|) fold 3: 0.590487356726776
+  Wilcoxon p (|y-ŷ| GBR vs |y-ȳ_train|) fold 4: 7.664922336992843e-05
+  Wilcoxon p (|y-ŷ| GBR vs |y-ȳ_train|) fold 5: 9.622327977360464e-07
+
+CV fold results:
+   fold       mae      rmse        r2  accuracy        f1   roc_auc  \
+0     1  5.530603  6.750156  0.005584  0.576104  0.404278  0.619612   
+1     2  5.230661  6.039695 -0.081470  0.580670  0.358556  0.521149   
+2     3  5.277959  6.324490 -0.013263  0.573820  0.385965  0.546437   
+3     4  4.573768  5.642313  0.012628  0.543379  0.369748  0.602126   
+4     5  4.387154  5.402637 -0.044117  0.613394  0.302198  0.569042   
+
+   wilcoxon_p_vs_train_mean_baseline  
+0                       1.055925e-10  
+1                       2.306439e-02  
+2                       5.904874e-01  
+3                       7.664922e-05  
+4                       9.622328e-07  
+
+CV fold PHQ-8 balance:
+   fold  n_rows  mean_phq8  median_phq8
+0     1    1314  10.753425         10.0
+1     2    1314   7.901065          7.0
+2     3    1314   9.326484          9.0
+3     4    1314  10.206240         10.0
+4     5    1314   8.254186          7.0
+
+CV fold Kruskal-Wallis test:
+  comparison   kruskal_H       p_value
+0   cv_folds  198.760107  6.941265e-42
+
+CV summary:
+     subset  n_rows  n_depressed  n_control  mae_mean   mae_std  rmse_mean  \
+0  cv_train    6570         2945       3625  5.000029  0.492255   6.031858   
+
+   rmse_std   r2_mean    r2_std  accuracy_mean  accuracy_std   f1_mean  \
+0   0.53603 -0.024128  0.038857       0.577473      0.024891  0.364149   
+
+     f1_std  roc_auc_mean  roc_auc_std  
+0  0.038687      0.571673     0.040069  
+
+Held-out test results:
+          subset  n_rows  n_depressed  n_control       mae      rmse  \
+0  held_out_test    1945          667       1278  5.035006  5.925189   
+
+         r2  accuracy        f1   roc_auc  
+0 -0.044128  0.602057  0.322242  0.537199  
+
+RADAR GBR Gender results:
+      group     n  n_depressed  n_control  accuracy        f1   roc_auc
+0  gender_0   433          119        314  0.563510  0.403785  0.558154
+1  gender_1  1512          548        964  0.613095  0.290909  0.551299
+
+RADAR GBR Age group results:
+    group    n  n_depressed  n_control  accuracy        f1   roc_auc
+0  middle  527          207        320  0.601518  0.400000  0.596966
+1   older  789          140        649  0.666667  0.250712  0.569448
+2   young  629          320        309  0.521463  0.317460  0.541232
+
+RADAR GBR Gender x age group results:
+             group    n  n_depressed  n_control  accuracy        f1   roc_auc
+0  middle gender_0  213           90        123  0.615023  0.559140  0.609124
+1  middle gender_1  314          117        197  0.592357  0.219512  0.587249
+2   older gender_0  166            6        160  0.512048  0.047059  0.476042
+3   older gender_1  623          134        489  0.707865  0.315789  0.616740
+4   young gender_0   54           23         31  0.518519  0.434783  0.493689
+5   young gender_1  575          297        278  0.521739  0.303797  0.554865
+
+RADAR GBR AIF360 fairness metrics (held-out predictions):
+  disparate_impact: 2.4960
+  statistical_parity_difference: 0.2741
+
+Wilcoxon p (held-out, paired |y-ŷ_GBR| vs |y-ȳ_train|): 0.1616148914889075
+  No significant difference from train-mean baseline at alpha=0.05 (improvement may be chance on this split).
+
+Pooled CV confusion matrix (PHQ-8 binarized):
+ [[2989  636]
+ [2140  805]]
+
+Held-out test confusion matrix:
+ [[987 291]
+ [483 184]]
+
+RADAR GBR SHAP summary (held-out test sample, n=500):
+
+RADAR GBR LIME explanations (first 2 held-out instances):
+  Instance 0:
+  Instance 1:
+
+================================================================================
+MODEL SECTION: RADAR GBC
+================================================================================
+
+Train rows: 6570
+Test rows: 1945
+Train participants: 219
+Test participants: 55
+
+Train/Test label distribution:
+           train  test
+control     3625  1278
+depressed   2945   667
+
+Train/Test Chi-square test:
+      comparison  train_n  test_n  train_control  train_depressed  \
+0  train_vs_test     6570    1945           3625             2945   
+
+   test_control  test_depressed       chi2       p_value  
+0          1278             667  67.720721  1.883734e-16  
+Best GBC params from GridSearchCV: {'learning_rate': 0.03, 'max_depth': 2, 'n_estimators': 100}
+  Wilcoxon p (|y - p_GBC| vs |y - p_dummy|) fold 1: 1.8124109361171887e-05
+  Wilcoxon p (|y - p_GBC| vs |y - p_dummy|) fold 2: 0.036826300511425394
+  Wilcoxon p (|y - p_GBC| vs |y - p_dummy|) fold 3: 0.3598637787216129
+  Wilcoxon p (|y - p_GBC| vs |y - p_dummy|) fold 4: 0.004847470096408175
+  Wilcoxon p (|y - p_GBC| vs |y - p_dummy|) fold 5: 0.0003213565963362911
+
+CV fold results:
+   fold  accuracy        f1   roc_auc  wilcoxon_p_vs_stratified_dummy
+0     1  0.585236  0.452261  0.597814                        0.000018
+1     2  0.602740  0.347500  0.515143                        0.036826
+2     3  0.556317  0.372443  0.525484                        0.359864
+3     4  0.530441  0.328618  0.597282                        0.004847
+4     5  0.623288  0.309623  0.576584                        0.000321
+
+CV fold label distribution:
+      control  depressed  n_rows
+fold                            
+1         626        688    1314
+2         834        480    1314
+3         716        598    1314
+4         606        708    1314
+5         843        471    1314
+
+CV fold Chi-square test:
+  comparison        chi2       p_value
+0   cv_folds  153.387441  3.825836e-32
+
+CV summary:
+     subset  n_rows  n_depressed  n_control  accuracy_mean  accuracy_std  \
+0  cv_train    6570         2945       3625       0.579604       0.03686   
+
+    f1_mean    f1_std  roc_auc_mean  roc_auc_std  
+0  0.362089  0.055507      0.562461     0.039586  
+
+Held-out test results:
+          subset  n_rows  n_depressed  n_control  accuracy        f1   roc_auc
+0  held_out_test    1945          667       1278  0.615424  0.322464  0.554395
+
+RADAR GBC Gender results:
+      group     n  n_depressed  n_control  accuracy        f1   roc_auc
+0  gender_0   433          119        314  0.593533  0.401361  0.575242
+1  gender_1  1512          548        964  0.621693  0.293827  0.561757
+
+RADAR GBC Age group results:
+    group    n  n_depressed  n_control  accuracy        f1   roc_auc
+0  middle  527          207        320  0.620493  0.425287  0.632080
+1   older  789          140        649  0.679341  0.226300  0.580932
+2   young  629          320        309  0.531002  0.312354  0.555492
+
+RADAR GBC Gender x age group results:
+             group    n  n_depressed  n_control  accuracy        f1   roc_auc
+0  middle gender_0  213           90        123  0.596244  0.542553  0.638663
+1  middle gender_1  314          117        197  0.636943  0.287500  0.623107
+2   older gender_0  166            6        160  0.602410  0.057143  0.430208
+3   older gender_1  623          134        489  0.699839  0.272374  0.618968
+4   young gender_0   54           23         31  0.555556  0.333333  0.510519
+5   young gender_1  575          297        278  0.528696  0.310433  0.564336
+
+RADAR GBC AIF360 fairness metrics (held-out predictions):
+  disparate_impact: 2.3324
+  statistical_parity_difference: 0.2309
+
+Wilcoxon p (held-out, |y - p_GBC| vs |y - p_dummy|): 4.394725442535e-06
+  Distributions of abs calibration errors differ from dummy (alpha=0.05).
+
+Pooled CV confusion matrix:
+ [[3009  616]
+ [2146  799]]
+
+Held-out test confusion matrix:
+ [[1019  259]
+ [ 489  178]]
+
+RADAR GBC SHAP summary (held-out test sample, n=500):
+
+RADAR GBC LIME explanations (first 2 held-out instances):
+  Instance 0:
+  Instance 1:
+
+================================================================================
+MODEL SECTION: RADAR GPBoost
+================================================================================
+
+Train rows: 6570
+Test rows: 1945
+Train participants: 219
+Test participants: 55
+Best GBC params from GridSearchCV: {'learning_rate': 0.03, 'max_depth': 2, 'n_estimators': 100}
+[GPBoost] [Warning] The 'objective' (='binary') for boosting and the 'likelihood' (='gaussian') for the GPModel do not match. It is assumed that the 'objective' for boosting is correctly specified, and the likelihood of the GPModel is changed accordingly. This can be problematic if the GPModel has been pre-trained 
+  Wilcoxon p (|y - p_GBC| vs |y - p_GP|) fold 1: 1.2422564138005643e-10
+[GPBoost] [Warning] The 'objective' (='binary') for boosting and the 'likelihood' (='gaussian') for the GPModel do not match. It is assumed that the 'objective' for boosting is correctly specified, and the likelihood of the GPModel is changed accordingly. This can be problematic if the GPModel has been pre-trained 
+  Wilcoxon p (|y - p_GBC| vs |y - p_GP|) fold 2: 9.015779991358117e-10
+[GPBoost] [Warning] The 'objective' (='binary') for boosting and the 'likelihood' (='gaussian') for the GPModel do not match. It is assumed that the 'objective' for boosting is correctly specified, and the likelihood of the GPModel is changed accordingly. This can be problematic if the GPModel has been pre-trained 
+  Wilcoxon p (|y - p_GBC| vs |y - p_GP|) fold 3: 5.303220587573757e-05
+[GPBoost] [Warning] The 'objective' (='binary') for boosting and the 'likelihood' (='gaussian') for the GPModel do not match. It is assumed that the 'objective' for boosting is correctly specified, and the likelihood of the GPModel is changed accordingly. This can be problematic if the GPModel has been pre-trained 
+  Wilcoxon p (|y - p_GBC| vs |y - p_GP|) fold 4: 0.0015112055603099684
+[GPBoost] [Warning] The 'objective' (='binary') for boosting and the 'likelihood' (='gaussian') for the GPModel do not match. It is assumed that the 'objective' for boosting is correctly specified, and the likelihood of the GPModel is changed accordingly. This can be problematic if the GPModel has been pre-trained 
+  Wilcoxon p (|y - p_GBC| vs |y - p_GP|) fold 5: 2.6405292634055267e-14
+CV fold-level results:
+   fold  accuracy        f1   roc_auc  wilcoxon_p_gbc_vs_gpboost
+0     1  0.519026  0.283447  0.563462               1.242256e-10
+1     2  0.608828  0.196875  0.499901               9.015780e-10
+2     3  0.543379  0.152542  0.495522               5.303221e-05
+3     4  0.496195  0.224824  0.538006               1.511206e-03
+4     5  0.661339  0.316436  0.559979               2.640529e-14
+
+CV summary:
+     subset  n_rows  n_depressed  n_control  accuracy_mean  accuracy_std  \
+0  cv_train    6570         2945       3625       0.565753      0.068034   
+
+    f1_mean    f1_std  roc_auc_mean  roc_auc_std  
+0  0.234825  0.065831      0.531374     0.032279  
+[GPBoost] [Warning] The 'objective' (='binary') for boosting and the 'likelihood' (='gaussian') for the GPModel do not match. It is assumed that the 'objective' for boosting is correctly specified, and the likelihood of the GPModel is changed accordingly. This can be problematic if the GPModel has been pre-trained 
+
+Held-out test results:
+          subset  n_rows  n_depressed  n_control  accuracy        f1   roc_auc
+0  held_out_test    1945          667       1278  0.645758  0.242024  0.520961
+
+RADAR GPBoost Gender results:
+      group     n  n_depressed  n_control  accuracy        f1   roc_auc
+0  gender_0   433          119        314  0.699769  0.336735  0.597562
+1  gender_1  1512          548        964  0.630291  0.215989  0.500086
+
+RADAR GPBoost Age group results:
+    group    n  n_depressed  n_control  accuracy        f1   roc_auc
+0  middle  527          207        320  0.618596  0.269091  0.596196
+1   older  789          140        649  0.762991  0.197425  0.513906
+2   young  629          320        309  0.521463  0.249377  0.545050
+
+RADAR GPBoost Gender x age group results:
+             group    n  n_depressed  n_control  accuracy        f1   roc_auc
+0  middle gender_0  213           90        123  0.615023  0.359375  0.597967
+1  middle gender_1  314          117        197  0.621019  0.190476  0.588746
+2   older gender_0  166            6        160  0.819277  0.062500  0.369271
+3   older gender_1  623          134        489  0.747994  0.218905  0.513865
+4   young gender_0   54           23         31  0.666667  0.500000  0.750351
+5   young gender_1  575          297        278  0.507826  0.224658  0.522152
+
+RADAR GPBoost AIF360 fairness metrics (held-out predictions):
+  disparate_impact: 1.6296
+  statistical_parity_difference: 0.0687
+
+Wilcoxon p (held-out, |y - p_GBC| vs |y - p_GP|): 1.5436362261300786e-20
+  GBC and GPBoost calibration errors differ significantly (alpha=0.05) on this test set.
+
+Pooled CV confusion matrix:
+ [[3276  349]
+ [2504  441]]
+
+Held-out test confusion matrix:
+ [[1146  132]
+ [ 557  110]]
+
+RADAR GPBoost SHAP summary (held-out test sample, n=500):
+  SHAP failed: 'NoneType' object is not callable
+
+RADAR GPBoost LIME explanations (first 2 held-out instances):
+  Instance 0:
+  Instance 1:
+
+================================================================================
+MODEL SECTION: Androids GBC
+================================================================================
+
+Best GBC params from GridSearchCV: {'learning_rate': 0.03, 'max_depth': 2, 'n_estimators': 100}
+  Wilcoxon p (|y - p_GBC| vs |y - p_dummy|) fold 1: 0.25792107092559224
+  Wilcoxon p (|y - p_GBC| vs |y - p_dummy|) fold 2: 0.6599681173524772
+  Wilcoxon p (|y - p_GBC| vs |y - p_dummy|) fold 3: 0.09579751577113584
+  Wilcoxon p (|y - p_GBC| vs |y - p_dummy|) fold 4: 0.5931855417950128
+  Wilcoxon p (|y - p_GBC| vs |y - p_dummy|) fold 5: 0.908704133280279
+CV fold results:
+   fold  accuracy        f1   roc_auc  wilcoxon_p_vs_stratified_dummy
+0     1  0.444444  0.500000  0.532468                        0.257921
+1     2  0.611111  0.695652  0.750000                        0.659968
+2     3  0.833333  0.823529  0.862500                        0.095798
+3     4  0.638889  0.745098  0.515385                        0.593186
+4     5  0.457143  0.558140  0.653595                        0.908704
+
+CV summary:
+     subset  n_rows  n_depressed  n_control  accuracy_mean  accuracy_std  \
+0  cv_train     179          101         78       0.596984      0.158619   
+
+    f1_mean    f1_std  roc_auc_mean  roc_auc_std  
+0  0.664484  0.133351      0.662789     0.146873  
+
+Held-out test results:
+          subset  n_rows  n_depressed  n_control  accuracy    f1   roc_auc
+0  held_out_test      45           21         24  0.688889  0.65  0.670635
+
+Androids GBC Gender results:
+    group   n  n_depressed  n_control  accuracy        f1   roc_auc
+0  female  29           11         18  0.586207  0.333333  0.353535
+1    male  16           10          6  0.875000  0.909091  0.933333
+
+Androids GBC Age group results:
+    group   n  n_depressed  n_control  accuracy        f1   roc_auc
+0  middle  13            7          6  0.692308  0.600000  0.714286
+1   older  20            8         12  0.800000  0.750000  0.750000
+2   young  12            6          6  0.500000  0.571429  0.666667
+
+Androids GBC Gender x age group results:
+           group   n  n_depressed  n_control  accuracy        f1  roc_auc
+0  middle female  11            5          6  0.636364  0.333333      0.6
+1    middle male   2            2          0  1.000000  1.000000      NaN
+2   older female  10            2          8  0.600000  0.000000      0.0
+3     older male  10            6          4  1.000000  1.000000      1.0
+4   young female   8            4          4  0.500000  0.500000      0.5
+5     young male   4            2          2  0.500000  0.666667      1.0
+
+Androids GBC AIF360 fairness metrics (held-out predictions):
+  disparate_impact: 0.3218
+  statistical_parity_difference: -0.5086
+
+Wilcoxon p (held-out, |y - p_GBC| vs |y - p_dummy|): 0.212256829769208
+
+Pooled CV confusion matrix:
+ [[36 42]
+ [30 71]]
+
+Held-out test confusion matrix:
+ [[18  6]
+ [ 8 13]]
+
+Androids GBC SHAP summary (held-out test sample, n=45):
+C:\Users\janku\AppData\Local\Temp\ipykernel_51512\4245084828.py:428: FutureWarning: The NumPy global RNG was seeded by calling `np.random.seed`. In a future version this function will no longer use the global RNG. Pass `rng` explicitly to opt-in to the new behaviour and silence this warning.
+  shap.summary_plot(shap_values, X_shap_df, show=False)
+
+Androids GBC LIME explanations (first 2 held-out instances):
+  Instance 0:
+  Instance 1:
+
+================================================================================
+MODEL SECTION: Androids GPBoost
+================================================================================
+
+Best GBC params from GridSearchCV: {'learning_rate': 0.03, 'max_depth': 3, 'n_estimators': 100}
+[GPBoost] [Warning] The 'objective' (='binary') for boosting and the 'likelihood' (='gaussian') for the GPModel do not match. It is assumed that the 'objective' for boosting is correctly specified, and the likelihood of the GPModel is changed accordingly. This can be problematic if the GPModel has been pre-trained 
+  Wilcoxon p (|y - p_GBC| vs |y - p_GP|) fold 1: 8.459887723161964e-05
+[GPBoost] [Warning] The 'objective' (='binary') for boosting and the 'likelihood' (='gaussian') for the GPModel do not match. It is assumed that the 'objective' for boosting is correctly specified, and the likelihood of the GPModel is changed accordingly. This can be problematic if the GPModel has been pre-trained 
+  Wilcoxon p (|y - p_GBC| vs |y - p_GP|) fold 2: 0.006249418538184488
+[GPBoost] [Warning] The 'objective' (='binary') for boosting and the 'likelihood' (='gaussian') for the GPModel do not match. It is assumed that the 'objective' for boosting is correctly specified, and the likelihood of the GPModel is changed accordingly. This can be problematic if the GPModel has been pre-trained 
+  Wilcoxon p (|y - p_GBC| vs |y - p_GP|) fold 3: 0.0006128635341729392
+[GPBoost] [Warning] The 'objective' (='binary') for boosting and the 'likelihood' (='gaussian') for the GPModel do not match. It is assumed that the 'objective' for boosting is correctly specified, and the likelihood of the GPModel is changed accordingly. This can be problematic if the GPModel has been pre-trained 
+  Wilcoxon p (|y - p_GBC| vs |y - p_GP|) fold 4: 0.0015013745353284489
+[GPBoost] [Warning] The 'objective' (='binary') for boosting and the 'likelihood' (='gaussian') for the GPModel do not match. It is assumed that the 'objective' for boosting is correctly specified, and the likelihood of the GPModel is changed accordingly. This can be problematic if the GPModel has been pre-trained 
+  Wilcoxon p (|y - p_GBC| vs |y - p_GP|) fold 5: 0.001206971473169062
+CV fold results:
+   fold  accuracy        f1   roc_auc  wilcoxon_p_gbc_vs_gpboost
+0     1  0.567568  0.680000  0.705357                   0.000085
+1     2  0.500000  0.640000  0.512987                   0.006249
+2     3  0.611111  0.720000  0.731250                   0.000613
+3     4  0.611111  0.695652  0.679012                   0.001501
+4     5  0.555556  0.636364  0.681250                   0.001207
+
+CV summary:
+     subset  n_rows  n_depressed  n_control  accuracy_mean  accuracy_std  \
+0  cv_train     181          101         80       0.569069      0.046072   
+
+    f1_mean   f1_std  roc_auc_mean  roc_auc_std  
+0  0.674403  0.03603      0.661971     0.085936  
+[GPBoost] [Warning] The 'objective' (='binary') for boosting and the 'likelihood' (='gaussian') for the GPModel do not match. It is assumed that the 'objective' for boosting is correctly specified, and the likelihood of the GPModel is changed accordingly. This can be problematic if the GPModel has been pre-trained 
+
+Held-out test results:
+          subset  n_rows  n_depressed  n_control  accuracy        f1   roc_auc
+0  held_out_test      43           21         22  0.604651  0.653061  0.571429
+
+Androids GPBoost Gender results:
+    group   n  n_depressed  n_control  accuracy        f1   roc_auc
+0  female  34           14         20  0.558824  0.545455  0.521429
+1    male   9            7          2  0.777778  0.875000  0.571429
+
+Androids GPBoost Age group results:
+    group   n  n_depressed  n_control  accuracy        f1  roc_auc
+0  middle  25            9         16  0.560000  0.521739   0.5625
+1   older  12            8          4  0.833333  0.888889   0.6250
+2   young   6            4          2  0.333333  0.500000   0.5000
+
+Androids GPBoost Gender x age group results:
+           group   n  n_depressed  n_control  accuracy        f1   roc_auc
+0  middle female  22            8         14  0.590909  0.526316  0.616071
+1    middle male   3            1          2  0.333333  0.500000  0.000000
+2   older female   8            4          4  0.750000  0.800000  0.500000
+3     older male   4            4          0  1.000000  1.000000       NaN
+4   young female   4            2          2  0.000000  0.000000  0.000000
+5     young male   2            2          0  1.000000  1.000000       NaN
+
+Androids GPBoost AIF360 fairness metrics (held-out predictions):
+  disparate_impact: 0.5588
+  statistical_parity_difference: -0.4412
+
+Wilcoxon p (held-out, |y - p_GBC| vs |y - p_GP|): 0.0038962734047326107
+  GBC and GPBoost calibration errors differ significantly (alpha=0.05) on this test set.
+
+Pooled CV confusion matrix:
+ [[22 58]
+ [20 81]]
+
+Held-out test confusion matrix:
+ [[10 12]
+ [ 5 16]]
+
+Androids GPBoost SHAP summary (held-out test sample, n=43):
+  SHAP failed: 'NoneType' object is not callable
+
+Androids GPBoost LIME explanations (first 2 held-out instances):
+  Instance 0:
+  Instance 1:
+
+Run log saved to: C:\Users\janku\Documents\KCL\Research Project\Research Project\results\logs\gradient_boosting_run_log.txt
+
+Ended: 2026-05-19 14:00:28.564310
