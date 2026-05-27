@@ -1,0 +1,3 @@
+model,train_rows,test_rows,train_participants,test_participants
+RADAR MERF-GBR,6570,1945,219,55
+Androids MERF-GBR,166,43,85,22

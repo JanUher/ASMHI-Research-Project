@@ -1,4 +1,8 @@
-"""MERF with Gradient Boosting Regressor + full evaluation (mirrors Gradient_Boosting copy GBR)."""
+"""MERF with Gradient Boosting Regressor + full evaluation (mirrors Gradient_Boosting copy GBR).
+
+_fit_merf_predict signature (8 args): X_train, Z_train, clusters_train, y_train,
+    X_test, Z_test, clusters_test, gbr_params — do not pass y_va/y_test here.
+"""
 
 from pathlib import Path
 import numpy as np
@@ -31,12 +35,18 @@ except ImportError:
 
 
 BASE = Path(r"C:/Users/janku/Documents/KCL/Research Project/Research Project")
-EXCEL_EXPORT_PATH = BASE / "results/logs/merf_gbr_results.xlsx"
+LOGS_DIR = BASE / "results/logs"
+EXCEL_EXPORT_PATH = LOGS_DIR / "merf_gbr_results.xlsx"
+GB_EXCEL_EXPORT_PATH = LOGS_DIR / "gradient_boosting_results.xlsx"
+CSV_EXPORT_DIR = LOGS_DIR / "merf_gbr"
+MERF_MODEL_TAG = "MERF-GBR"
 
+# Same sheet keys as Gradient_Boosting copy.ipynb / figures_fainres.ipynb
 RESULTS_STORE = {
     "split_info": [],
     "best_params": [],
     "train_test_balance": [],
+    "train_test_distribution": [],
     "cv_folds": [],
     "cv_balance": [],
     "statistical_tests": [],
@@ -85,6 +95,7 @@ def record_standard_model_outputs(model_name, **kwargs):
         "split_info": "split_info",
         "best_params": "best_params",
         "train_test_balance": "train_test_balance",
+        "train_test_distribution": "train_test_distribution",
         "cv_folds": "cv_folds",
         "cv_balance": "cv_balance",
         "statistical_tests": "statistical_tests",
@@ -107,24 +118,127 @@ def record_standard_model_outputs(model_name, **kwargs):
             record_table(sheet, model_name, pd.DataFrame([val]))
         elif key == "best_params":
             record_table(sheet, model_name, pd.DataFrame([val]))
+        elif key == "train_test_distribution":
+            dist = val.reset_index().rename(columns={"index": "label"})
+            record_table(sheet, model_name, dist)
         else:
             record_table(sheet, model_name, val)
 
 
-def export_results_to_excel(path=EXCEL_EXPORT_PATH):
+def _train_test_distribution_table(y_bin_train, y_bin_test):
+    return pd.DataFrame(
+        {
+            "train": [int((y_bin_train == 0).sum()), int((y_bin_train == 1).sum())],
+            "test": [int((y_bin_test == 0).sum()), int((y_bin_test == 1).sum())],
+        },
+        index=["control", "depressed"],
+    )
+
+
+def build_results_tables():
+    """Concatenate in-memory RESULTS_STORE frames per sheet."""
+    tables = {}
+    for sheet_key, frames in RESULTS_STORE.items():
+        if frames:
+            tables[sheet_key] = pd.concat(frames, ignore_index=True)
+    return tables
+
+
+def _write_tables_to_excel(tables, path):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
         wrote = False
-        for sheet_key, frames in RESULTS_STORE.items():
-            if not frames:
-                continue
-            pd.concat(frames, ignore_index=True).to_excel(writer, sheet_name=sheet_key[:31], index=False)
+        for sheet_key, df in tables.items():
+            df.to_excel(writer, sheet_name=sheet_key[:31], index=False)
             wrote = True
         if not wrote:
             pd.DataFrame({"message": ["No results recorded."]}).to_excel(writer, sheet_name="info", index=False)
-    print(f"\nExcel workbook saved to: {path.resolve()}")
     return path
+
+
+def export_results_to_csv(tables=None, csv_dir=CSV_EXPORT_DIR):
+    """One CSV per sheet under results/logs/merf_gbr/ (same schema as GB Excel sheets)."""
+    tables = tables or build_results_tables()
+    csv_dir = Path(csv_dir)
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    paths = []
+    for sheet_key, df in tables.items():
+        out = csv_dir / f"{sheet_key}.csv"
+        df.to_csv(out, index=False)
+        paths.append(out)
+    print(f"\nCSV exports ({len(paths)} files) under: {csv_dir.resolve()}")
+    return paths
+
+
+def merge_tables_into_workbook(merf_tables, target_path=GB_EXCEL_EXPORT_PATH, model_tag=MERF_MODEL_TAG):
+    """Append MERF rows into the grad-boost results workbook for figures_fainres.ipynb."""
+    target_path = Path(target_path)
+    merged = {}
+
+    if target_path.exists():
+        xl = pd.ExcelFile(target_path)
+        existing_sheets = xl.sheet_names
+    else:
+        existing_sheets = []
+
+    all_sheets = set(existing_sheets) | set(merf_tables.keys())
+    for sheet in all_sheets:
+        parts = []
+        if sheet in existing_sheets:
+            old = pd.read_excel(target_path, sheet_name=sheet)
+            if "model" in old.columns:
+                old = old[~old["model"].astype(str).str.contains(model_tag, na=False)]
+            parts.append(old)
+        if sheet in merf_tables:
+            parts.append(merf_tables[sheet])
+        if parts:
+            merged[sheet] = pd.concat(parts, ignore_index=True)
+
+    if not merged:
+        merged = merf_tables
+
+    _write_tables_to_excel(merged, target_path)
+    print(f"\nMerged MERF results into: {target_path.resolve()}")
+    return target_path
+
+
+def export_results(
+    excel_path=EXCEL_EXPORT_PATH,
+    export_csv=True,
+    merge_into_gb_workbook=True,
+    gb_workbook_path=GB_EXCEL_EXPORT_PATH,
+):
+    """
+    Save MERF-GBR results like Gradient Boosting copy:
+    - multi-sheet Excel in results/logs/
+    - per-sheet CSVs in results/logs/merf_gbr/
+    - optionally merge into gradient_boosting_results.xlsx for figure generation
+    """
+    tables = build_results_tables()
+    if not tables:
+        print("No results to export.")
+        return None
+
+    merf_xlsx = _write_tables_to_excel(tables, excel_path)
+    print(f"Excel workbook saved to: {merf_xlsx.resolve()}")
+
+    if export_csv:
+        export_results_to_csv(tables)
+
+    if merge_into_gb_workbook:
+        merge_tables_into_workbook(tables, target_path=gb_workbook_path)
+
+    return merf_xlsx
+
+
+def export_results_to_excel(path=EXCEL_EXPORT_PATH, export_csv=True, merge_into_gb_workbook=True):
+    """Backward-compatible alias for export_results."""
+    return export_results(
+        excel_path=path,
+        export_csv=export_csv,
+        merge_into_gb_workbook=merge_into_gb_workbook,
+    )
 
 
 def confusion_matrix_for_display(y_true, y_pred, title):
@@ -419,7 +533,7 @@ def run_merf_gbr_radar():
         y_va = y_train[va]
         y_pred, _, _, _ = _fit_merf_predict(
             X_train[tr], Z.iloc[tr], groups_train[tr], y_train[tr],
-            X_train[va], Z.iloc[va], groups_train[va], y_va,
+            X_train[va], Z.iloc[va], groups_train[va],
             best_gbr_params,
         )
         preds_bin = (y_pred >= 10).astype(int)
@@ -477,7 +591,7 @@ def run_merf_gbr_radar():
 
     test_preds, scaler, gbr_explain, _ = _fit_merf_predict(
         X_train, Z_train, groups_train, y_train,
-        X_test, Z_test, groups_test, y_test,
+        X_test, Z_test, groups_test,
         best_gbr_params,
     )
     test_preds_bin = (test_preds >= 10).astype(int)
@@ -513,6 +627,8 @@ def run_merf_gbr_radar():
     gbr_explain.fit(X_train_s, y_train)
     run_shap_lime_explanations(model_name, gbr_explain, X_train_s, X_test_s, feature_cols, mode="regression")
 
+    train_test_table = _train_test_distribution_table(y_bin_train, y_bin_test)
+
     record_standard_model_outputs(
         model_name,
         split_info={
@@ -523,6 +639,7 @@ def run_merf_gbr_radar():
         },
         best_params={"model": model_name, **best_gbr_params},
         train_test_balance=train_test_balance_df,
+        train_test_distribution=train_test_table,
         cv_folds=cv_results_df,
         cv_balance=cv_balance_df,
         statistical_tests=cv_balance_summary_df,
@@ -546,11 +663,15 @@ def run_merf_gbr_androids():
     meta_cols = ["file_path", "file", "file_stem", "bdi_score", "depressed", "fold", "speech_type", "subgroup_from_path"]
     feature_cols = [c for c in df.columns if c not in meta_cols]
     z_features = [c for c in ["speech_type", "subgroup_from_path"] if c in df.columns]
-    required = feature_cols + ["bdi_score", "depressed", "file_stem"] + z_features
-    df = df.dropna(subset=required).copy()
 
+    df["bdi_score"] = pd.to_numeric(df["bdi_score"], errors="coerce")
+    df["depressed"] = pd.to_numeric(df["depressed"], errors="coerce")
     for col in feature_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    required = feature_cols + ["bdi_score", "depressed", "file_stem"] + z_features
+    df = df.dropna(subset=required).copy()
+    df["depressed"] = df["depressed"].astype(int)
 
     X = df[feature_cols].astype(float).values
     y = df["bdi_score"].astype(float).values
@@ -600,18 +721,20 @@ def run_merf_gbr_androids():
     print(f"BDI threshold for binary metrics (train midpoint): {bdi_thresh:.2f}")
 
     cv_results = []
+    cv_fold_bdi = []
     cv_y_true_bin, cv_y_pred_bin = [], []
 
     for fold, (tr, va) in enumerate(gkf.split(X_train, y_train, groups=groups_train), start=1):
         y_va = y_train[va]
         y_pred, _, _, _ = _fit_merf_predict(
             X_train[tr], Z.iloc[tr], groups_train[tr], y_train[tr],
-            X_train[va], Z.iloc[va], groups_train[va], y_va,
+            X_train[va], Z.iloc[va], groups_train[va],
             best_gbr_params,
         )
         preds_bin = (y_pred >= bdi_thresh).astype(int)
         cv_y_true_bin.extend(y_bin_train[va])
         cv_y_pred_bin.extend(preds_bin)
+        cv_fold_bdi.append(y_va)
         mean_train = float(np.mean(y_train[tr]))
         w_cv = _wilcoxon_paired(y_va, y_pred, np.full_like(y_va, mean_train))
         print(f"  Wilcoxon p fold {fold}:", w_cv)
@@ -630,6 +753,13 @@ def run_merf_gbr_androids():
     print("\nCV fold results:")
     print(cv_results_df)
 
+    cv_balance_df = pd.DataFrame([
+        {"fold": i, "n_rows": len(v), "mean_bdi": float(np.mean(v)), "median_bdi": float(np.median(v))}
+        for i, v in enumerate(cv_fold_bdi, start=1)
+    ])
+    cv_stat, cv_p = kruskal(*cv_fold_bdi)
+    cv_balance_summary_df = pd.DataFrame([{"comparison": "cv_folds", "kruskal_H": cv_stat, "p_value": cv_p}])
+
     cv_summary_df = pd.DataFrame([{
         "subset": "cv_train",
         "n_rows": len(train_idx),
@@ -647,7 +777,7 @@ def run_merf_gbr_androids():
 
     test_preds, scaler, gbr_explain, _ = _fit_merf_predict(
         X_train, Z_train, groups_train, y_train,
-        X_test, Z_test, groups_test, y_test,
+        X_test, Z_test, groups_test,
         best_gbr_params,
     )
     test_preds_bin = (test_preds >= bdi_thresh).astype(int)
@@ -684,6 +814,8 @@ def run_merf_gbr_androids():
     gbr_explain.fit(X_train_s, y_train)
     run_shap_lime_explanations(model_name, gbr_explain, X_train_s, X_test_s, feature_cols, mode="regression")
 
+    train_test_table = _train_test_distribution_table(y_bin_train, y_bin_test)
+
     record_standard_model_outputs(
         model_name,
         split_info={
@@ -694,7 +826,10 @@ def run_merf_gbr_androids():
         },
         best_params={"model": model_name, **best_gbr_params},
         train_test_balance=train_test_balance_df,
+        train_test_distribution=train_test_table,
         cv_folds=cv_results_df,
+        cv_balance=cv_balance_df,
+        statistical_tests=cv_balance_summary_df,
         cv_summary=cv_summary_df,
         test_summary=test_summary_df,
         wilcoxon={"held_out_merf_gbr_vs_train_mean": w_test},
@@ -702,12 +837,12 @@ def run_merf_gbr_androids():
     )
 
 
-def run_all(export_excel=True):
+def run_all(export_excel=True, export_csv=True, merge_into_gb_workbook=True):
     reset_results_store()
     run_merf_gbr_radar()
     run_merf_gbr_androids()
     if export_excel:
-        export_results_to_excel()
+        export_results(export_csv=export_csv, merge_into_gb_workbook=merge_into_gb_workbook)
 
 
 if __name__ == "__main__":

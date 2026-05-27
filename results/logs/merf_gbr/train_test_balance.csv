@@ -1,0 +1,3 @@
+model,comparison,train_n,test_n,train_mean_phq8,test_mean_phq8,kruskal_H,p_value,train_mean_bdi,test_mean_bdi
+RADAR MERF-GBR,train_vs_test,6570,1945,9.288280060882801,8.191259640102828,54.53259257676155,1.5289096374741905e-13,,
+Androids MERF-GBR,train_vs_test,166,43,,,0.6742442418366646,0.41157577309199767,17.096385542168676,20.88372093023256
