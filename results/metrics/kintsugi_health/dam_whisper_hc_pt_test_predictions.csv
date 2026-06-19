@@ -1,0 +1,27 @@
+file_path,file,file_stem,subgroup,participant_id,depressed,pred_prob,pred_label
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\HC\01_CF56_1.wav,01_CF56_1.wav,01_CF56_1,HC,01,0,0.47272217,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\HC\05_CF41_3.wav,05_CF41_3.wav,05_CF41_3,HC,05,0,0.06901983,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\HC\06_CF44_2.wav,06_CF44_2.wav,06_CF44_2,HC,06,0,0.28098,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\HC\10_CF51_2.wav,10_CF51_2.wav,10_CF51_2,HC,10,0,0.299796,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\HC\11_CF44_2.wav,11_CF44_2.wav,11_CF44_2,HC,11,0,0.08707285,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\HC\13_CF45_2.wav,13_CF45_2.wav,13_CF45_2,HC,13,0,0.41302204,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\HC\19_CF62_4.wav,19_CF62_4.wav,19_CF62_4,HC,19,0,0.14861515,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\HC\23_CF55_3.wav,23_CF55_3.wav,23_CF55_3,HC,23,0,0.060943913,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\HC\32_CF22_3.wav,32_CF22_3.wav,32_CF22_3,HC,32,0,0.14610957,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\HC\47_CF61_2.wav,47_CF61_2.wav,47_CF61_2,HC,47,0,0.2102097,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\HC\51_CF52_2.wav,51_CF52_2.wav,51_CF52_2,HC,51,0,0.10982346,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\HC\56_CM23_3.wav,56_CM23_3.wav,56_CM23_3,HC,56,0,0.109015755,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\PT\01_PM58_2.wav,01_PM58_2.wav,01_PM58_2,PT,01,1,0.9655726,1
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\PT\05_PM53_4.wav,05_PM53_4.wav,05_PM53_4,PT,05,1,0.50590336,1
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\PT\06_PM64_2.wav,06_PM64_2.wav,06_PM64_2,PT,06,1,0.8800336,1
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\PT\10_PF51_1.wav,10_PF51_1.wav,10_PF51_1,PT,10,1,0.6880814,1
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\PT\11_PF34_4.wav,11_PF34_4.wav,11_PF34_4,PT,11,1,0.23116107,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\PT\13_PF58_2.wav,13_PF58_2.wav,13_PF58_2,PT,13,1,0.48036027,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\PT\19_PF43_2.wav,19_PF43_2.wav,19_PF43_2,PT,19,1,0.6457033,1
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\PT\23_PF55_2.wav,23_PF55_2.wav,23_PF55_2,PT,23,1,0.99355584,1
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\PT\32_PF51_2.wav,32_PF51_2.wav,32_PF51_2,PT,32,1,0.55914795,1
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\PT\35_PF43_2.wav,35_PF43_2.wav,35_PF43_2,PT,35,1,0.5943304,1
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\PT\47_PF42_2.wav,47_PF42_2.wav,47_PF42_2,PT,47,1,0.5169954,1
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\PT\51_PF58_2.wav,51_PF58_2.wav,51_PF58_2,PT,51,1,0.45640153,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\PT\56_PM57_4.wav,56_PM57_4.wav,56_PM57_4,PT,56,1,0.4702416,0
+C:\Users\janku\Documents\KCL\Research Project\Research Project\data\raw\PT\70_PF51_1.wav,70_PF51_1.wav,70_PF51_1,PT,70,1,0.94551337,1

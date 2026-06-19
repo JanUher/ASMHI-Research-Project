@@ -1,0 +1,2 @@
+model,n_total,n_train,n_test,n_participants,epochs,batch_size,learning_rate,freeze_encoder,accuracy,f1,roc_auc
+DAM-like Whisper (HC/PT),118,92,26,70,8,2,0.001,True,0.8461538461538461,0.8333333333333334,0.9642857142857144
