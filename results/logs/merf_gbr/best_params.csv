@@ -1,3 +1,0 @@
-model,learning_rate,max_depth,n_estimators
-RADAR MERF-GBR,0.03,2,100
-Androids MERF-GBR,0.03,2,100

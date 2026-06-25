@@ -1,2 +1,0 @@
-backbone,n_rows,n_train,n_test,n_groups,n_train_groups,n_test_groups,epochs,batch_size,learning_rate,accuracy,f1,roc_auc
-wav2vec2,224,179,45,115,92,23,8,4,0.001,0.8222222222222222,0.8260869565217391,0.9761904761904762
