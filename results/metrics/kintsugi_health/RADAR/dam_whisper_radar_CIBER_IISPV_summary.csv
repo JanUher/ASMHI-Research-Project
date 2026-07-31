@@ -1,0 +1,2 @@
+model,sites,n_total,n_train,n_test,n_participants,epochs,batch_size,learning_rate,freeze_encoder,accuracy,f1,roc_auc
+DAM-like Whisper (RADAR - CIBER_IISPV),CIBER+IISPV,2222,1882,340,116,8,8,0.001,True,0.6970588235294117,0.7885010266940452,0.6483494444667282
