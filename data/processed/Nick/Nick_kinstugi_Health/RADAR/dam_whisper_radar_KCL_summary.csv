@@ -1,0 +1,2 @@
+model,sites,n_total,n_train,n_test,n_participants,epochs,batch_size,learning_rate,freeze_encoder,accuracy,f1,roc_auc
+DAM-like Whisper (RADAR - KCL),KCL,8509,6570,1939,274,8,8,0.001,True,0.6415678184631253,0.43357783211083945,0.6195218038775602
