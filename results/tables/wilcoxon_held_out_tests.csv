@@ -1,0 +1,19 @@
+model,test_name,p_value,workbook_family,dataset
+Androids GBC,held_out_gbc_vs_stratified_dummy,0.212256829769208,gradient_boosting,Androids
+Androids GPBoost,held_out_gbc_vs_gpboost,0.003896273404732611,gradient_boosting,Androids
+Androids MERF-GBR,held_out_merf_gbr_vs_train_mean,0.6035359730494256,merf_gbr,Androids
+Androids MERF-RF,held_out_merf_rf_vs_train_mean,0.6725110653213648,merf_rf,Androids
+Androids MERF-SVR,held_out_merf_svr_vs_train_mean,0.05482191589616246,merf_svr,Androids
+Androids RFC,held_out_rfc_vs_stratified_dummy,0.0936699953596147,random_forest,Androids
+Androids SVC,held_out_svc_vs_stratified_dummy,0.04757570302722464,svm,Androids
+Androids SVR,held_out_svr_vs_train_mean,0.05184247672669582,svm,Androids
+RADAR GBC,held_out_gbc_vs_stratified_dummy,4.394725442535e-06,gradient_boosting,RADAR
+RADAR GBR,held_out_gbr_vs_train_mean,0.1616148914889075,gradient_boosting,RADAR
+RADAR GPBoost,held_out_gbc_vs_gpboost,1.543636226130079e-20,gradient_boosting,RADAR
+RADAR MERF-GBR,held_out_merf_gbr_vs_train_mean,4.071617672393829e-05,merf_gbr,RADAR
+RADAR MERF-RF,held_out_merf_rf_vs_train_mean,0.0004810406789139965,merf_rf,RADAR
+RADAR MERF-SVR,held_out_merf_svr_vs_train_mean,0.01280930525952436,merf_svr,RADAR
+RADAR RFC,held_out_rfc_vs_stratified_dummy,0.004891158738876588,random_forest,RADAR
+RADAR RFR,held_out_rfr_vs_train_mean,0.1847969744831619,random_forest,RADAR
+RADAR SVC,held_out_svc_vs_stratified_dummy,0.2626927904158762,svm,RADAR
+RADAR SVR,held_out_svr_vs_train_mean,6.404881334434856e-08,svm,RADAR

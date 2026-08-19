@@ -1,0 +1,3 @@
+model,max_depth,max_features,min_samples_split,n_estimators
+RADAR MERF-RF,10,sqrt,2,500
+Androids MERF-RF,,sqrt,2,200

@@ -1,0 +1,9 @@
+dataset,model,display_name,model_category,workbook_family,accuracy_mean,accuracy_std,f1_mean,f1_std,roc_auc_mean,roc_auc_std,mae_mean,mae_std,rmse_mean,rmse_std,r2_mean,r2_std
+Androids,Androids SVC,Support Vector Classifier,classifier,svm,0.6992063492063492,0.1012643676681687,0.7517189917189917,0.07323200013746946,0.8127220573544103,0.1097843925115938,,,,,,
+Androids,Androids RFC,Random Forest,classifier,random_forest,0.6531746031746032,0.09579861509210418,0.7096264975334743,0.103543339672818,0.7422029604382546,0.1221960407471056,,,,,,
+Androids,Androids GBC,Gradient Boosting Classifier,classifier,gradient_boosting,0.6888888888888889,,0.65,,0.6706349206349206,,,,,,,
+Androids,Androids GPBoost,GPBoost,classifier,gradient_boosting,0.6046511627906976,,0.6530612244897959,,0.5714285714285714,,,,,,,
+RADAR,RADAR SVC,Support Vector Classifier,classifier,svm,0.5776255707762558,0.03879412808503176,0.3601990913505399,0.03838861879477373,0.5839509786442395,0.0329043552898916,,,,,,
+RADAR,RADAR RFC,Random Forest Classifier,classifier,random_forest,0.5786910197869102,0.03573462548755969,0.4189015140287415,0.05042004457550744,0.5781604175793211,0.0392287744578677,,,,,,
+RADAR,RADAR GBC,Gradient Boosting Classifier,classifier,gradient_boosting,0.6154241645244216,,0.322463768115942,,0.5543953375424964,,,,,,,
+RADAR,RADAR GPBoost,GPBoost,classifier,gradient_boosting,0.645758354755784,,0.242024202420242,,0.5209607637495807,,,,,,,

@@ -1,0 +1,17 @@
+model,matrix,true_label,pred_label,count
+RADAR MERF-RF,cv_pooled,control_0,control_0,3426
+RADAR MERF-RF,cv_pooled,control_0,depressed_1,199
+RADAR MERF-RF,cv_pooled,depressed_1,control_0,2661
+RADAR MERF-RF,cv_pooled,depressed_1,depressed_1,284
+RADAR MERF-RF,held_out_test,control_0,control_0,1200
+RADAR MERF-RF,held_out_test,control_0,depressed_1,78
+RADAR MERF-RF,held_out_test,depressed_1,control_0,589
+RADAR MERF-RF,held_out_test,depressed_1,depressed_1,78
+Androids MERF-RF,cv_pooled,control_0,control_0,78
+Androids MERF-RF,cv_pooled,control_0,depressed_1,0
+Androids MERF-RF,cv_pooled,depressed_1,control_0,84
+Androids MERF-RF,cv_pooled,depressed_1,depressed_1,4
+Androids MERF-RF,held_out_test,control_0,control_0,24
+Androids MERF-RF,held_out_test,control_0,depressed_1,0
+Androids MERF-RF,held_out_test,depressed_1,control_0,19
+Androids MERF-RF,held_out_test,depressed_1,depressed_1,0

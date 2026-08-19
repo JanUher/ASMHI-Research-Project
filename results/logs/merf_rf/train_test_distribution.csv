@@ -1,0 +1,5 @@
+model,label,train,test
+RADAR MERF-RF,control,3625,1278
+RADAR MERF-RF,depressed,2945,667
+Androids MERF-RF,control,78,24
+Androids MERF-RF,depressed,88,19

@@ -1,0 +1,3 @@
+model,C,gamma,kernel
+RADAR MERF-SVR,0.1,scale,rbf
+Androids MERF-SVR,10.0,0.01,rbf

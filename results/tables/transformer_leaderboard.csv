@@ -1,0 +1,5 @@
+subset,n_rows,n_groups,accuracy_mean,accuracy_std,f1_mean,f1_std,roc_auc_mean,roc_auc_std,dataset,model,backbone,approach,eval_protocol,source_model
+all,224.0,115.0,0.9282828282828284,0.0604290343884687,0.9289130434782608,0.0653713962654573,0.979699593335957,0.0282472351036583,Androids,HuBERT (Androids),hubert,linear_probe,5fold_group_cv,
+all,224.0,115.0,0.9369696969696972,0.0691369685210745,0.9390692640692642,0.0699514391418005,0.9688756910800798,0.0356442881829162,Androids,Wav2Vec2 (Androids),wav2vec2,linear_probe,5fold_group_cv,
+all,224.0,115.0,0.8305050505050506,0.0574977319968106,0.8422015182884748,0.0411850150365625,0.9402759742521498,0.0379231880867621,Androids,Whisper (Androids),whisper,linear_probe,5fold_group_cv,
+,,,0.8461538461538461,,0.8333333333333334,,0.9642857142857144,,Kintsugi Health,Kintsugi Health (HC/PT),kintsugi_whisper,dam_whisper_head,held_out_test,DAM-like Whisper (HC/PT)
