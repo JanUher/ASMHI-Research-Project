@@ -2,7 +2,7 @@
 |:----------|:-----------|:-----------------|:--------------------------|:-------------------|------------------:|
 | RADAR     | classifier | RADAR SVC        | Support Vector Classifier | roc_auc_mean       |          0.583951 |
 | RADAR     | regressor  | RADAR SVR        | Support Vector Regressor  | mae_mean           |          4.9535   |
-| RADAR     | merf       | RADAR MERF-RF    | ME RFRegressor            | roc_auc_mean       |          0.575329 |
+| RADAR     | gpboost    | RADAR GPBoost    | GPBoost                   | roc_auc_mean       |          0.520961 |
 | Androids  | classifier | Androids SVC     | Support Vector Classifier | roc_auc_mean       |          0.812722 |
-| Androids  | regressor  | Androids SVR     | SVM Regressor             | mae_mean           |         11.6989   |
-| Androids  | merf       | Androids MERF-RF | ME RFRegressor            | roc_auc_mean       |          0.697633 |
+| Androids  | regressor  | Androids SVR     | Support Vector Regressor  | mae_mean           |         11.6989   |
+| Androids  | gpboost    | Androids GPBoost | GPBoost                   | roc_auc_mean       |          0.571429 |

@@ -1,0 +1,12 @@
+| dataset   | family             | model                       | protocol                                  |   accuracy |    f1 |   roc_auc |     mae | selection                          |
+|:----------|:-------------------|:----------------------------|:------------------------------------------|-----------:|------:|----------:|--------:|:-----------------------------------|
+| RADAR     | classifier         | Support Vector Classifier   | grouped 80/20; 5-fold GroupKFold on train |      0.578 | 0.36  |     0.584 | nan     | roc_auc_mean=0.584                 |
+| RADAR     | regressor          | Support Vector Regressor    | grouped 80/20; 5-fold GroupKFold on train |      0.578 | 0.277 |     0.577 |   4.953 | mae_mean=4.953                     |
+| RADAR     | mixed effect model | GPBoost                     | grouped 80/20; 5-fold GroupKFold on train |      0.646 | 0.242 |     0.521 | nan     | roc_auc_mean=0.521                 |
+| Androids  | classifier         | Support Vector Classifier   | grouped 80/20; 5-fold GroupKFold on train |      0.699 | 0.752 |     0.813 | nan     | roc_auc_mean=0.813                 |
+| Androids  | regressor          | Support Vector Regressor    | grouped 80/20; 5-fold GroupKFold on train |      0.469 | 0.097 |     0.687 |  11.699 | mae_mean=11.699                    |
+| Androids  | mixed effect model | GPBoost                     | grouped 80/20; 5-fold GroupKFold on train |      0.605 | 0.653 |     0.571 | nan     | roc_auc_mean=0.571                 |
+| Androids  | encoder probe      | HuBERT (Androids)           | 5-fold GroupKFold on all 224 clips        |      0.928 | 0.929 |     0.98  | nan     | max ROC-AUC among Androids probes  |
+| RADAR-KCL | encoder probe      | HuBERT (RADAR-KCL)          | 5-fold GroupKFold on Nick KCL embeddings  |      0.589 | 0.541 |     0.62  | nan     | max ROC-AUC among RADAR-KCL probes |
+| Androids  | Kintsugi           | Kintsugi Health (Androids)  | grouped 80/20, no inner CV                |      0.846 | 0.833 |     0.964 | nan     | held-out test                      |
+| RADAR-KCL | Kintsugi           | Kintsugi Health (RADAR-KCL) | grouped 80/20, no inner CV                |      0.642 | 0.434 |     0.62  | nan     | held-out test                      |

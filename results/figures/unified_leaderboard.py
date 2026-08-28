@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
+import shutil
 
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FixedLocator, NullLocator
@@ -30,6 +32,18 @@ TRANSFORMER_DISPLAY_NAMES = {
 }
 
 SPEECH_ENCODER_ORDER = ("wav2vec2", "hubert", "whisper", "kintsugi_whisper")
+SPEECH_BACKBONE_LABELS = {
+    "wav2vec2": "Wav2Vec2",
+    "hubert": "HuBERT",
+    "whisper": "Whisper",
+    "kintsugi_whisper": "Kintsugi Health",
+}
+
+KINTSUGI_RADAR_DIRS = (
+    KINTSUGI_DIR / "RADAR",
+    BASE / "data" / "processed" / "Nick" / "Nick_kinstugi_Health" / "RADAR",
+    BASE / "data" / "processed" / "Nick_kinstugi_Health" / "RADAR",
+)
 
 WORKBOOKS: list[tuple[str, Path]] = [
     ("gradient_boosting", LOGS / "GB Results" / "gradient_boosting_results.xlsx"),
@@ -100,7 +114,12 @@ CLASSIFIER_MODELS = [
     "Androids SVC",
 ]
 
-POSTER_CATEGORIES = ("classifier", "regressor", "merf")
+POSTER_CATEGORIES = ("classifier", "regressor", "gpboost")
+
+GPBOOST_TEST_CM = {
+    "RADAR GPBoost": BASE / "results" / "metrics" / "GradBoost" / "RADAR" / "radar_gpboost_test_confusion_matrix.csv",
+    "Androids GPBoost": BASE / "results" / "metrics" / "GradBoost" / "Androids" / "androids_gpboost_test_confusion_matrix.csv",
+}
 
 
 def _model_category(model: str) -> str:
@@ -584,61 +603,139 @@ def plot_leaderboard_heatmap(leaderboard: pd.DataFrame) -> list[Path]:
     return paths
 
 
-def load_kintsugi_leaderboard(metrics_dir: Path | None = None) -> pd.DataFrame:
-    """Load Kintsugi Health DAM-like Whisper held-out test metrics."""
-    metrics_dir = Path(metrics_dir or KINTSUGI_DIR)
-    summary_path = metrics_dir / "dam_whisper_hc_pt_summary.csv"
-    if not summary_path.exists():
-        print(f"Warning: Kintsugi summary missing: {summary_path}")
-        return pd.DataFrame()
+def _speech_encoder_display_name(backbone: str, dataset: str, site: str = "") -> str:
+    family = SPEECH_BACKBONE_LABELS.get(backbone, backbone)
+    if dataset == "Androids":
+        return f"{family} (Androids)"
+    if site:
+        return f"{family} (RADAR-{site})"
+    return f"{family} (RADAR)"
 
-    df = pd.read_csv(summary_path)
-    if df.empty:
-        return pd.DataFrame()
 
-    row = df.iloc[0].to_dict()
-    return pd.DataFrame(
-        [
-            {
-                "dataset": "Kintsugi Health",
-                "model": TRANSFORMER_DISPLAY_NAMES["kintsugi_whisper"],
-                "backbone": "kintsugi_whisper",
-                "approach": "dam_whisper_head",
-                "accuracy_mean": row.get("accuracy"),
-                "f1_mean": row.get("f1"),
-                "roc_auc_mean": row.get("roc_auc"),
-                "eval_protocol": "held_out_test",
-                "source_model": row.get("model", "DAM-like Whisper (HC/PT)"),
-            }
-        ]
+def _parse_repr_summary_stem(stem: str) -> tuple[str, str, str] | None:
+    """Return (dataset, site, backbone) from a repr_learn summary filename."""
+    if not stem.endswith("_summary") or stem.endswith("_dl_head_no_folds_summary"):
+        return None
+    if stem.endswith("_embeddings"):
+        return None
+    base = stem[: -len("_summary")]
+    if base.startswith("androids_"):
+        backbone = base[len("androids_") :]
+        if backbone in SPEECH_BACKBONE_LABELS:
+            return "Androids", "", backbone
+        return None
+    if base.startswith("radar_"):
+        rest = base[len("radar_") :]
+        for backbone in ("wav2vec2", "hubert", "whisper"):
+            token = f"_{backbone}"
+            if rest.endswith(token):
+                site = rest[: -len(token)]
+                if site in {"CIBER_IISPV", "CIBER+IISPV"}:
+                    site = "CIBER+IISPV"
+                if site:
+                    return "RADAR", site, backbone
+    return None
+
+
+def _speech_row_sort_key(row: pd.Series) -> tuple:
+    dataset_rank = 0 if row.get("dataset") == "Androids" else 1
+    site = str(row.get("site") or "")
+    site_rank = {
+        "": 0,
+        "KCL": 1,
+        "CIBER+IISPV": 2,
+        "CIBER_IISPV": 2,
+        "VUmc": 3,
+    }.get(site, 9)
+    backbone_rank = {name: i for i, name in enumerate(SPEECH_ENCODER_ORDER)}.get(
+        str(row.get("backbone")), 9
     )
+    return (dataset_rank, site_rank, backbone_rank)
+
+
+def load_kintsugi_leaderboard(metrics_dir: Path | None = None) -> pd.DataFrame:
+    """Load Androids HC/PT and RADAR DAM-like Whisper held-out test metrics."""
+    metrics_dir = Path(metrics_dir or KINTSUGI_DIR)
+    rows: list[dict] = []
+
+    hc_pt_path = metrics_dir / "dam_whisper_hc_pt_summary.csv"
+    if hc_pt_path.exists():
+        df = pd.read_csv(hc_pt_path)
+        if not df.empty:
+            row = df.iloc[0].to_dict()
+            rows.append(
+                {
+                    "dataset": "Androids",
+                    "site": "",
+                    "model": _speech_encoder_display_name("kintsugi_whisper", "Androids"),
+                    "backbone": "kintsugi_whisper",
+                    "approach": "dam_whisper_head",
+                    "accuracy_mean": row.get("accuracy"),
+                    "f1_mean": row.get("f1"),
+                    "roc_auc_mean": row.get("roc_auc"),
+                    "eval_protocol": "held_out_test",
+                    "source_model": row.get("model", "DAM-like Whisper (HC/PT)"),
+                    "n_rows": row.get("n_total"),
+                    "n_groups": row.get("n_participants"),
+                }
+            )
+    else:
+        print(f"Warning: Kintsugi HC/PT summary missing: {hc_pt_path}")
+
+    radar_dir = next((p for p in KINTSUGI_RADAR_DIRS if p.is_dir()), None)
+    if radar_dir is None:
+        print("Warning: Kintsugi RADAR metrics directory not found.")
+    else:
+        for path in sorted(radar_dir.glob("dam_whisper_radar_*_summary.csv")):
+            df = pd.read_csv(path)
+            if df.empty:
+                continue
+            row = df.iloc[0].to_dict()
+            site = str(row.get("sites") or path.stem.replace("dam_whisper_radar_", "").replace("_summary", ""))
+            site = site.replace("_", "+") if site == "CIBER_IISPV" else site
+            rows.append(
+                {
+                    "dataset": "RADAR",
+                    "site": site,
+                    "model": _speech_encoder_display_name("kintsugi_whisper", "RADAR", site),
+                    "backbone": "kintsugi_whisper",
+                    "approach": "dam_whisper_head",
+                    "accuracy_mean": row.get("accuracy"),
+                    "f1_mean": row.get("f1"),
+                    "roc_auc_mean": row.get("roc_auc"),
+                    "eval_protocol": "held_out_test",
+                    "source_model": row.get("model", f"DAM-like Whisper (RADAR - {site})"),
+                    "n_rows": row.get("n_total"),
+                    "n_groups": row.get("n_participants"),
+                }
+            )
+
+    return pd.DataFrame(rows)
 
 
 def load_transformer_leaderboard(
     repr_dir: Path | None = None,
     kintsugi_dir: Path | None = None,
 ) -> pd.DataFrame:
-    """Load speech-encoder metrics: Androids linear probes + Kintsugi Health."""
+    """Load speech-encoder metrics: linear probes (Androids + RADAR sites) and Kintsugi."""
     repr_dir = Path(repr_dir or REPR_LEARN_DIR)
     rows: list[dict] = []
     if repr_dir.exists():
         for path in sorted(repr_dir.glob("*_summary.csv")):
-            stem = path.stem
-            if stem.endswith("_dl_head_no_folds_summary"):
+            parsed = _parse_repr_summary_stem(path.stem)
+            if parsed is None:
                 continue
-            if not stem.endswith("_summary"):
+            dataset, site, backbone = parsed
+            if dataset == "RADAR" and site in {"CIBER", "IISPV"}:
                 continue
-            base = stem[: -len("_summary")]
-            if "_" not in base:
-                continue
-            dataset, backbone = base.split("_", 1)
             df = pd.read_csv(path)
             if df.empty:
                 continue
             row = df.iloc[0].to_dict()
-            row["dataset"] = dataset.capitalize() if dataset.lower() == "androids" else dataset.upper()
-            row["model"] = TRANSFORMER_DISPLAY_NAMES.get(backbone, backbone)
+            row["dataset"] = dataset
+            row["site"] = site
             row["backbone"] = backbone
+            row["model"] = _speech_encoder_display_name(backbone, dataset, site)
             row["approach"] = "linear_probe"
             row["eval_protocol"] = "5fold_group_cv"
             rows.append(row)
@@ -649,14 +746,19 @@ def load_transformer_leaderboard(
     if not kintsugi.empty:
         rows.extend(kintsugi.to_dict(orient="records"))
 
-    return pd.DataFrame(rows)
+    board = pd.DataFrame(rows)
+    if board.empty:
+        return board
+    board["_sort"] = board.apply(_speech_row_sort_key, axis=1)
+    board = board.sort_values("_sort").drop(columns="_sort").reset_index(drop=True)
+    return board
 
 
 def plot_transformer_heatmap(
     repr_dir: Path | None = None,
     kintsugi_dir: Path | None = None,
 ) -> Path | None:
-    """Classification heatmap for speech encoders (Androids + Kintsugi Health)."""
+    """Classification heatmap for speech encoders (Androids + RADAR sites + Kintsugi)."""
     board = load_transformer_leaderboard(repr_dir, kintsugi_dir)
     if board.empty:
         print("No speech-encoder metrics found; skipping transformer heatmap.")
@@ -667,11 +769,6 @@ def plot_transformer_heatmap(
         print("Speech-encoder summaries lack classification metrics.")
         return None
 
-    order = [
-        TRANSFORMER_DISPLAY_NAMES[k]
-        for k in SPEECH_ENCODER_ORDER
-        if k in set(board["backbone"])
-    ]
     long = board.melt(
         id_vars=["model", "dataset", "backbone", "eval_protocol"],
         value_vars=cls_metrics,
@@ -679,13 +776,13 @@ def plot_transformer_heatmap(
         value_name="value",
     )
     pivot = long.pivot_table(index="model", columns="metric", values="value", aggfunc="first")
-    pivot = pivot.reindex(order).dropna(how="all")
+    pivot = pivot.reindex(board["model"].tolist()).dropna(how="all")
     if pivot.empty:
         return None
 
     pivot = rename_metric_columns(pivot)
 
-    fig, ax = plt.subplots(figsize=(8, max(3.8, 0.65 * len(pivot))))
+    fig, ax = plt.subplots(figsize=(8, max(3.8, 0.55 * len(pivot))))
     sns.heatmap(
         pivot,
         annot=True,
@@ -698,7 +795,10 @@ def plot_transformer_heatmap(
     )
     ax.tick_params(axis="x", labelsize=10)
     finalize_heatmap_figure(
-        fig, ax, "Classification metrics — speech encoders", ylabel="encoder / dataset"
+        fig,
+        ax,
+        "Classification metrics — speech encoders",
+        ylabel="encoder / cohort",
     )
     out = save_fig(fig, FIG_DIR / "unified_leaderboard_heatmap_speech_encoders.png")
 
@@ -707,9 +807,31 @@ def plot_transformer_heatmap(
         legacy.unlink()
 
     TABLE_DIR.mkdir(parents=True, exist_ok=True)
-    board.to_csv(TABLE_DIR / "transformer_leaderboard.csv", index=False)
+    keep_cols = [
+        c
+        for c in [
+            "dataset",
+            "site",
+            "model",
+            "backbone",
+            "approach",
+            "eval_protocol",
+            "n_rows",
+            "n_groups",
+            "accuracy_mean",
+            "accuracy_std",
+            "f1_mean",
+            "f1_std",
+            "roc_auc_mean",
+            "roc_auc_std",
+            "source_model",
+        ]
+        if c in board.columns
+    ]
+    export = board[keep_cols].copy()
+    export.to_csv(TABLE_DIR / "transformer_leaderboard.csv", index=False)
     (TABLE_DIR / "transformer_leaderboard.md").write_text(
-        board.to_markdown(index=False), encoding="utf-8"
+        export.to_markdown(index=False), encoding="utf-8"
     )
     print(f"Saved: {TABLE_DIR / 'transformer_leaderboard.csv'}")
     print(f"Saved: {TABLE_DIR / 'transformer_leaderboard.md'}")
@@ -717,7 +839,7 @@ def plot_transformer_heatmap(
 
 
 def pick_best_models_per_category(leaderboard: pd.DataFrame) -> pd.DataFrame:
-    """Best model per dataset × pipeline category (classifier / regressor / MERF)."""
+    """Best classifier and regressor per dataset, plus GPBoost (mixed-effects boosting)."""
     rows: list[dict] = []
     for dataset in ["RADAR", "Androids"]:
         sub = leaderboard[leaderboard["dataset"] == dataset].copy()
@@ -754,21 +876,36 @@ def pick_best_models_per_category(leaderboard: pd.DataFrame) -> pd.DataFrame:
                 }
             )
 
-        merf = sub[sub["model"].map(_model_category).eq("merf")].dropna(subset=["roc_auc_mean"])
-        if not merf.empty:
-            best = merf.loc[merf["roc_auc_mean"].idxmax()]
+        gp_name = f"{dataset} GPBoost"
+        gp = sub[sub["model"] == gp_name]
+        if not gp.empty:
+            row = gp.iloc[0]
             rows.append(
                 {
                     "dataset": dataset,
-                    "category": "merf",
-                    "model": best["model"],
-                    "display_name": best.get("display_name", poster_display_name(best["model"])),
+                    "category": "gpboost",
+                    "model": row["model"],
+                    "display_name": row.get("display_name", poster_display_name(row["model"])),
                     "selection_metric": "roc_auc_mean",
-                    "selection_value": float(best["roc_auc_mean"]),
+                    "selection_value": float(row["roc_auc_mean"]) if pd.notna(row.get("roc_auc_mean")) else float("nan"),
                 }
             )
 
     return pd.DataFrame(rows)
+
+
+def _confusion_matrix_from_pred_csv(path: Path) -> np.ndarray | None:
+    if not path.exists():
+        return None
+    df = pd.read_csv(path, index_col=0)
+    cm = np.zeros((2, 2), dtype=int)
+    for i, true_key in enumerate(("true_0", "true_1")):
+        if true_key not in df.index:
+            continue
+        for j, pred_key in enumerate(("pred_0", "pred_1")):
+            if pred_key in df.columns:
+                cm[i, j] = int(df.loc[true_key, pred_key])
+    return cm
 
 
 def _confusion_matrix_array(
@@ -776,6 +913,10 @@ def _confusion_matrix_array(
     model_name: str,
     matrix_name: str = "held_out_test",
 ) -> np.ndarray | None:
+    if model_name in GPBOOST_TEST_CM:
+        loaded = _confusion_matrix_from_pred_csv(GPBOOST_TEST_CM[model_name])
+        if loaded is not None:
+            return loaded
     if confusion_matrices.empty:
         return None
     sub = confusion_matrices[
@@ -802,7 +943,7 @@ def _plot_confusion_matrix_ax(
     title: str | None = None,
     display_labels: tuple[str, str] = ("control (0)", "depressed (1)"),
 ) -> None:
-    """Draw a clean 2×2 confusion matrix (no background grid lines)."""
+    """Draw a 2×2 confusion matrix filling the axes (original layout)."""
     cm = np.asarray(cm, dtype=int)
     vmax = max(int(cm.max()), 1)
     ax.imshow(cm, interpolation="nearest", cmap="Blues", vmin=0, vmax=vmax)
@@ -814,8 +955,8 @@ def _plot_confusion_matrix_ax(
     ax.yaxis.set_minor_locator(NullLocator())
     ax.set_xticklabels(list(display_labels))
     ax.set_yticklabels(list(display_labels))
-    ax.set_xlabel("Predicted label")
-    ax.set_ylabel("True label")
+    ax.set_xlabel("Predicted label", labelpad=10)
+    ax.set_ylabel("True label", labelpad=10)
 
     thresh = cm.max() / 2.0 if cm.max() > 0 else 0.5
     for i in range(cm.shape[0]):
@@ -831,11 +972,7 @@ def _plot_confusion_matrix_ax(
             )
 
     ax.grid(False)
-    ax.xaxis.grid(False)
-    ax.yaxis.grid(False)
-    for line in list(ax.xaxis.get_gridlines()) + list(ax.yaxis.get_gridlines()):
-        line.set_visible(False)
-    ax.tick_params(which="both", length=0)
+    ax.tick_params(which="both", length=0, pad=8)
     for spine in ax.spines.values():
         spine.set_visible(True)
     if title:
@@ -851,7 +988,7 @@ def _save_confusion_figure(
 ) -> Path:
     """Save confusion matrix without bbox_inches='tight' (it rasterizes a white stripe over the heatmap)."""
     outfile.parent.mkdir(parents=True, exist_ok=True)
-    adjust = subplots_adjust or {"left": 0.20, "bottom": 0.16, "right": 0.96, "top": 0.86}
+    adjust = subplots_adjust or {"left": 0.24, "bottom": 0.18, "right": 0.96, "top": 0.86}
     fig.subplots_adjust(**adjust)
     fig.savefig(outfile, dpi=dpi)
     plt.close(fig)
@@ -913,28 +1050,40 @@ def export_poster_confusion_grid(
     nrows = int(np.ceil(n / ncols))
     with plt.rc_context({"axes.grid": False}):
         with sns.axes_style("white"):
-            fig, axes = plt.subplots(nrows, ncols, figsize=(4.5 * ncols, 4 * nrows))
+            fig, axes = plt.subplots(nrows, ncols, figsize=(4.5 * ncols, 4.0 * nrows))
             axes = np.atleast_1d(axes).ravel()
 
             for ax, panel in zip(axes, panels):
-                metric = panel["selection_metric"].replace("_mean", "")
                 label = panel.get("display_name", poster_display_name(panel["model"]))
+                cat = str(panel["category"])
+                cat_label = "GPBoost" if cat.lower() == "gpboost" else cat.title()
                 title = (
-                    f"{panel['dataset']} — {panel['category'].title()}\n"
-                    f"{label}\n(best {metric}={panel['selection_value']:.3f})"
+                    f"{panel['dataset']} — {cat_label}\n"
+                    f"{label}"
                 )
                 _plot_confusion_matrix_ax(ax, panel["cm"], title=title)
                 ax.title.set_fontsize(10)
+                ax.tick_params(labelsize=9)
 
             for ax in axes[len(panels) :]:
                 ax.axis("off")
 
-            fig.suptitle("Held-out test confusion matrices — best model per category", y=0.98)
+            fig.suptitle(
+                "Held-out test confusion matrices — best model per category",
+                y=0.98,
+            )
 
     return _save_confusion_figure(
         fig,
         POSTER_DIR / "confusion_matrices_best_per_category.png",
-        subplots_adjust={"left": 0.06, "bottom": 0.06, "right": 0.98, "top": 0.90, "wspace": 0.45, "hspace": 0.55},
+        subplots_adjust={
+            "left": 0.14,
+            "bottom": 0.12,
+            "right": 0.98,
+            "top": 0.88,
+            "wspace": 0.38,
+            "hspace": 0.52,
+        },
     )
 
 
@@ -1106,6 +1255,387 @@ def write_table_2() -> tuple[Path, Path]:
     return TABLE_DIR / "table2_evaluation_protocol.csv", TABLE_DIR / "table2_evaluation_protocol.md"
 
 
+def _speech_metric(row: pd.Series, name: str) -> float | None:
+    for key in (f"{name}_mean", name):
+        if key in row and pd.notna(row[key]):
+            return float(row[key])
+    return None
+
+
+def write_results_best_snapshot(
+    leaderboard: pd.DataFrame,
+    speech_board: pd.DataFrame,
+) -> pd.DataFrame:
+    """Compact winners table: tabular best-per-category plus comparable encoder rows."""
+    best = pick_best_models_per_category(leaderboard)
+    family_label = {
+        "classifier": "classifier",
+        "regressor": "regressor",
+        "gpboost": "mixed effect model",
+        "merf": "mixed effect model",
+    }
+    rows: list[dict] = []
+    for _, row in best.iterrows():
+        src = leaderboard[leaderboard["model"] == row["model"]]
+        src = src.iloc[0] if not src.empty else row
+        rows.append(
+            {
+                "dataset": row["dataset"],
+                "family": family_label.get(str(row["category"]), str(row["category"])),
+                "model": src.get("display_name", row.get("display_name", row["model"])),
+                "protocol": "grouped 80/20; 5-fold GroupKFold on train",
+                "accuracy": src.get("accuracy_mean"),
+                "f1": src.get("f1_mean"),
+                "roc_auc": src.get("roc_auc_mean"),
+                "mae": src.get("mae_mean"),
+                "selection": f"{row['selection_metric']}={row['selection_value']:.3f}",
+            }
+        )
+
+    if not speech_board.empty:
+        probes = speech_board[speech_board.get("approach", speech_board.get("eval_protocol", "")) != ""]
+        androids_probe = speech_board[
+            (speech_board["dataset"] == "Androids")
+            & (speech_board["backbone"].isin(["wav2vec2", "hubert", "whisper"]))
+        ]
+        if not androids_probe.empty:
+            auc = androids_probe.apply(lambda r: _speech_metric(r, "roc_auc"), axis=1)
+            pick = androids_probe.loc[auc.idxmax()]
+            rows.append(
+                {
+                    "dataset": "Androids",
+                    "family": "encoder probe",
+                    "model": pick.get("model"),
+                    "protocol": "5-fold GroupKFold on all 224 clips",
+                    "accuracy": _speech_metric(pick, "accuracy"),
+                    "f1": _speech_metric(pick, "f1"),
+                    "roc_auc": _speech_metric(pick, "roc_auc"),
+                    "mae": np.nan,
+                    "selection": "max ROC-AUC among Androids probes",
+                }
+            )
+        kcl_probe = speech_board[
+            (speech_board["dataset"] == "RADAR")
+            & (speech_board["site"].astype(str).isin(["KCL", "KCL"]))
+            & (speech_board["backbone"].isin(["wav2vec2", "hubert", "whisper"]))
+        ]
+        if kcl_probe.empty:
+            kcl_probe = speech_board[
+                (speech_board["dataset"] == "RADAR")
+                & speech_board["site"].astype(str).str.contains("KCL", case=False, na=False)
+                & (speech_board["backbone"].isin(["wav2vec2", "hubert", "whisper"]))
+            ]
+        if not kcl_probe.empty:
+            auc = kcl_probe.apply(lambda r: _speech_metric(r, "roc_auc"), axis=1)
+            pick = kcl_probe.loc[auc.idxmax()]
+            rows.append(
+                {
+                    "dataset": "RADAR-KCL",
+                    "family": "encoder probe",
+                    "model": pick.get("model"),
+                    "protocol": "5-fold GroupKFold on Nick KCL embeddings",
+                    "accuracy": _speech_metric(pick, "accuracy"),
+                    "f1": _speech_metric(pick, "f1"),
+                    "roc_auc": _speech_metric(pick, "roc_auc"),
+                    "mae": np.nan,
+                    "selection": "max ROC-AUC among RADAR-KCL probes",
+                }
+            )
+        for _, pick in speech_board[speech_board["backbone"] == "kintsugi_whisper"].iterrows():
+            site = str(pick.get("site") or "")
+            if pick.get("dataset") == "RADAR" and site not in {"", "KCL", "KCL"}:
+                if "KCL" not in site:
+                    continue
+            rows.append(
+                {
+                    "dataset": "Androids" if pick.get("dataset") == "Androids" else f"RADAR-{site or 'KCL'}",
+                    "family": "Kintsugi",
+                    "model": pick.get("model"),
+                    "protocol": "grouped 80/20, no inner CV",
+                    "accuracy": _speech_metric(pick, "accuracy"),
+                    "f1": _speech_metric(pick, "f1"),
+                    "roc_auc": _speech_metric(pick, "roc_auc"),
+                    "mae": np.nan,
+                    "selection": "held-out test",
+                }
+            )
+
+    out = pd.DataFrame(rows)
+    for col in ("accuracy", "f1", "roc_auc", "mae"):
+        if col in out.columns:
+            out[col] = pd.to_numeric(out[col], errors="coerce").round(3)
+    save_table_csv_md(out, "results_best_model_snapshot")
+    return out
+
+
+def plot_classification_metric_bars(
+    leaderboard: pd.DataFrame,
+    speech_board: pd.DataFrame,
+) -> list[Path]:
+    """Two grouped bar charts (RADAR, Androids) for Accuracy, F1, and ROC-AUC."""
+    FIG_DIR.mkdir(parents=True, exist_ok=True)
+    paths: list[Path] = []
+
+    def _rows_for_dataset(dataset: str) -> pd.DataFrame:
+        recs: list[dict] = []
+        tab = leaderboard[leaderboard["dataset"] == dataset]
+        tab = tab[~tab["model"].astype(str).str.contains(r"FT[- ]?Transformer", case=False, na=False)]
+        for _, r in tab.iterrows():
+            if pd.isna(r.get("roc_auc_mean")):
+                continue
+            recs.append(
+                {
+                    "model": r.get("display_name", r["model"]),
+                    "Accuracy": r.get("accuracy_mean"),
+                    "F1": r.get("f1_mean"),
+                    "ROC-AUC": r.get("roc_auc_mean"),
+                }
+            )
+        if not speech_board.empty:
+            sp = speech_board[speech_board["dataset"] == dataset].copy()
+            if dataset == "RADAR":
+                sp = sp[sp["site"].astype(str).str.contains("KCL", case=False, na=False)]
+            for _, r in sp.iterrows():
+                recs.append(
+                    {
+                        "model": r.get("model"),
+                        "Accuracy": _speech_metric(r, "accuracy"),
+                        "F1": _speech_metric(r, "f1"),
+                        "ROC-AUC": _speech_metric(r, "roc_auc"),
+                    }
+                )
+        df = pd.DataFrame(recs).dropna(subset=["ROC-AUC"])
+        if df.empty:
+            return df
+        df = df.drop_duplicates(subset=["model"], keep="first")
+        df = df.sort_values("ROC-AUC", ascending=False)
+        return df.melt(id_vars=["model"], value_vars=["Accuracy", "F1", "ROC-AUC"], var_name="metric", value_name="score")
+
+    for dataset in ("RADAR", "Androids"):
+        long = _rows_for_dataset(dataset)
+        if long.empty:
+            continue
+        n_models = long["model"].nunique()
+        fig, ax = plt.subplots(figsize=(max(10, 0.55 * n_models + 4), 5.8))
+        sns.barplot(data=long, x="model", y="score", hue="metric", ax=ax)
+        ax.set_ylim(0, 1)
+        ax.set_xlabel("")
+        ax.set_ylabel("Score")
+        title = "RADAR-KCL" if dataset == "RADAR" else "Androids"
+        ax.set_title(f"{title}: Accuracy, F1, and ROC-AUC")
+        ax.legend(title="", loc="upper right")
+        plt.setp(ax.get_xticklabels(), rotation=35, ha="right")
+        fig.tight_layout()
+        path = FIG_DIR / f"metric_bars_{dataset.lower()}.png"
+        fig.savefig(path, dpi=200, bbox_inches="tight")
+        plt.close(fig)
+        print(f"Saved: {path}")
+        paths.append(path)
+    return paths
+
+
+def _parse_gender_age_group(value: object) -> tuple[str | None, str | None]:
+    s = str(value).strip().lower().replace("-", " ").replace("_", " ")
+    age = None
+    if "young" in s:
+        age = "young"
+    elif "middle" in s:
+        age = "middle"
+    elif "older" in s or "old" in s:
+        age = "older"
+    gender = None
+    if "female" in s or "gender 0" in s or s.endswith("0"):
+        if "male" in s and "female" not in s:
+            gender = "male"
+        elif "female" in s or "gender 0" in s:
+            gender = "female"
+    if gender is None:
+        if "male" in s:
+            gender = "male"
+        elif "gender 1" in s or s.endswith("1"):
+            gender = "male"
+    return age, gender
+
+
+def _model_family_label(model: str) -> str:
+    m = str(model)
+    if "MERF" in m or m.startswith("ME "):
+        if "SVR" in m or "SVM" in m:
+            return "MERF-SVR"
+        if "GB" in m:
+            return "MERF-GBR"
+        return "MERF-RF"
+    if "GPBoost" in m or "GPBoost" in m:
+        return "GPBoost"
+    if "RFC" in m or "RFR" in m:
+        return "Random Forest"
+    if "SVC" in m or "SVR" in m:
+        return "SVM"
+    if "GBC" in m or "GBR" in m:
+        return "Gradient Boosting"
+    return "Other"
+
+
+def load_gender_age_subgroups() -> pd.DataFrame:
+    parts: list[pd.DataFrame] = []
+    for _family, path in WORKBOOKS:
+        df = load_sheet(path, "subgroup_gender_age")
+        if not df.empty:
+            parts.append(df)
+    csv_paths = [
+        LOGS / "merf_rf" / "subgroup_gender_age.csv",
+        LOGS / "merf_svr" / "subgroup_gender_age.csv",
+        BASE / "results" / "metrics" / "merf_gbr" / "subgroup_gender_age.csv",
+    ]
+    for path in csv_paths:
+        if path.exists():
+            parts.append(pd.read_csv(path))
+    if not parts:
+        return pd.DataFrame()
+    df = pd.concat(parts, ignore_index=True)
+    if "group" not in df.columns:
+        for alt in ("group", "subgroup", "stratum"):
+            if alt in df.columns:
+                df = df.rename(columns={alt: "group"})
+                break
+    if "n" not in df.columns:
+        for alt in ("n_samples", "count", "n_rows"):
+            if alt in df.columns:
+                df = df.rename(columns={alt: "n"})
+                break
+    df["model"] = df["model"].astype(str)
+    parsed = df["group"].map(_parse_gender_age_group)
+    df["age"] = parsed.map(lambda x: x[0])
+    df["gender"] = parsed.map(lambda x: x[1])
+    df = df.dropna(subset=["age", "gender"])
+    df["stratum"] = df["age"] + " × " + df["gender"]
+    df["dataset"] = df["model"].map(_dataset_from_model)
+    df["family"] = df["model"].map(_model_family_label)
+    df["is_merf"] = df["family"].str.startswith("MERF")
+    df["class"] = np.where(df["is_merf"], "MERF", "Conventional")
+    for col in ("n", "accuracy", "f1", "roc_auc"):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    df = df.drop_duplicates(subset=["model", "group"], keep="last")
+    drop = df["model"].str.contains(r"FT[- ]?Transformer", case=False, na=False)
+    return df.loc[~drop].copy()
+
+
+def plot_intersectional_merf_vs_conventional() -> pd.DataFrame:
+    """Average gender×age performance: MERF vs conventional, and by backbone family."""
+    df = load_gender_age_subgroups()
+    if df.empty:
+        print("No subgroup_gender_age sheets found; skipping intersectional comparison.")
+        return df
+
+    min_n = df["n"].where(df["dataset"] == "RADAR", df["n"])
+    keep = ~((df["dataset"] == "RADAR") & (df["n"] < 20))
+    keep &= ~((df["dataset"] == "Androids") & (df["n"] < 4))
+    df = df.loc[keep].copy()
+
+    def _wmean(g: pd.DataFrame, col: str) -> float:
+        sub = g.dropna(subset=[col, "n"])
+        if sub.empty or sub["n"].sum() <= 0:
+            return float("nan")
+        return float(np.average(sub[col], weights=sub["n"]))
+
+    family_rows = []
+    for (dataset, family), g in df.groupby(["dataset", "family"]):
+        family_rows.append(
+            {
+                "dataset": dataset,
+                "family": family,
+                "class": "MERF" if str(family).startswith("MERF") else "Conventional",
+                "accuracy": _wmean(g, "accuracy"),
+                "f1": _wmean(g, "f1"),
+                "roc_auc": _wmean(g, "roc_auc"),
+                "n_cells": len(g),
+            }
+        )
+    family_table = pd.DataFrame(family_rows)
+    save_table_csv_md(family_table.round(3), "intersectional_family_means")
+
+    stratum_rows = []
+    for (dataset, stratum, cls), g in df.groupby(["dataset", "stratum", "class"]):
+        stratum_rows.append(
+            {
+                "dataset": dataset,
+                "stratum": stratum,
+                "class": cls,
+                "accuracy": _wmean(g, "accuracy"),
+                "f1": _wmean(g, "f1"),
+                "roc_auc": _wmean(g, "roc_auc"),
+                "n": int(g["n"].sum()),
+            }
+        )
+    stratum_table = pd.DataFrame(stratum_rows)
+    save_table_csv_md(stratum_table.round(3), "intersectional_merf_vs_conventional")
+
+    FIG_DIR.mkdir(parents=True, exist_ok=True)
+    if not stratum_table.empty:
+        g = sns.catplot(
+            data=stratum_table,
+            x="stratum",
+            y="roc_auc",
+            hue="class",
+            col="dataset",
+            kind="bar",
+            height=4.8,
+            aspect=1.15,
+            sharey=True,
+        )
+        g.set(ylim=(0.4, 1.0))
+        g.set_axis_labels("", "ROC-AUC")
+        g.set_titles("{col_name}")
+        for ax in g.axes.flat:
+            plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
+        g.fig.suptitle("Gender × age ROC-AUC: MERF vs conventional models", y=1.04)
+        path = FIG_DIR / "intersectional_merf_vs_conventional_roc_auc.png"
+        g.fig.savefig(path, dpi=200, bbox_inches="tight")
+        plt.close(g.fig)
+        print(f"Saved: {path}")
+
+    if not family_table.empty:
+        long = family_table.melt(
+            id_vars=["dataset", "family"],
+            value_vars=["accuracy", "f1", "roc_auc"],
+            var_name="metric",
+            value_name="score",
+        )
+        long["metric"] = long["metric"].map(
+            {"accuracy": "Accuracy", "f1": "F1", "roc_auc": "ROC-AUC"}
+        )
+        g = sns.catplot(
+            data=long,
+            x="family",
+            y="score",
+            hue="metric",
+            col="dataset",
+            kind="bar",
+            height=4.8,
+            aspect=1.2,
+        )
+        g.set(ylim=(0, 1))
+        g.set_axis_labels("", "Score")
+        g.set_titles("{col_name}")
+        for ax in g.axes.flat:
+            plt.setp(ax.get_xticklabels(), rotation=25, ha="right")
+        g.fig.suptitle("Intersectional (gender × age) mean scores by model family", y=1.04)
+        path = FIG_DIR / "intersectional_scores_by_family.png"
+        g.fig.savefig(path, dpi=200, bbox_inches="tight")
+        plt.close(g.fig)
+        print(f"Saved: {path}")
+    return stratum_table
+
+
+def copy_confusion_matrices_for_results() -> None:
+    src = POSTER_DIR / "confusion_matrices_best_per_category.png"
+    if src.exists():
+        dest = FIG_DIR / "confusion_matrices_best_per_category.png"
+        shutil.copy2(src, dest)
+        print(f"Copied confusion-matrix grid to {dest}")
+
+
 def main() -> None:
     FIG_DIR.mkdir(parents=True, exist_ok=True)
     POSTER_DIR.mkdir(parents=True, exist_ok=True)
@@ -1143,6 +1673,12 @@ def main() -> None:
 
     write_table_1()
     write_table_2()
+
+    speech_board = load_transformer_leaderboard()
+    write_results_best_snapshot(leaderboard, speech_board)
+    plot_classification_metric_bars(leaderboard, speech_board)
+    plot_intersectional_merf_vs_conventional()
+    copy_confusion_matrices_for_results()
     print("\nDone.")
 
 

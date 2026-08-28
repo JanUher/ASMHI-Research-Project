@@ -1,0 +1,16 @@
+| dataset   | family            | class        |   accuracy |    f1 |   roc_auc |   n_cells |
+|:----------|:------------------|:-------------|-----------:|------:|----------:|----------:|
+| Androids  | GPBoost           | Conventional |      0.605 | 0.578 |     0.516 |         4 |
+| Androids  | Gradient Boosting | Conventional |      0.674 | 0.473 |     0.572 |         5 |
+| Androids  | MERF-GBR          | MERF         |      0.537 | 0     |     0.482 |         4 |
+| Androids  | MERF-RF           | MERF         |      0.537 | 0     |     0.621 |         4 |
+| Androids  | MERF-SVR          | MERF         |      0.537 | 0     |     0.828 |         4 |
+| Androids  | Random Forest     | Conventional |      0.721 | 0.61  |     0.665 |         5 |
+| Androids  | SVM               | Conventional |      0.679 | 0.422 |     0.792 |         9 |
+| RADAR     | GPBoost           | Conventional |      0.646 | 0.226 |     0.532 |         6 |
+| RADAR     | Gradient Boosting | Conventional |      0.609 | 0.301 |     0.582 |        12 |
+| RADAR     | MERF-GBR          | MERF         |      0.659 | 0.061 |     0.581 |         6 |
+| RADAR     | MERF-RF           | MERF         |      0.657 | 0.165 |     0.583 |         6 |
+| RADAR     | MERF-SVR          | MERF         |      0.657 | 0     |     0.529 |         6 |
+| RADAR     | Random Forest     | Conventional |      0.577 | 0.347 |     0.569 |        12 |
+| RADAR     | SVM               | Conventional |      0.61  | 0.314 |     0.567 |        12 |
