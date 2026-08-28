@@ -1,2 +1,0 @@
-comparison,train_n,test_n,train_mean_phq8,train_median_phq8,test_mean_phq8,test_median_phq8,kruskal_H,p_value
-train_vs_test,6570,1945,9.288280060882801,9.0,8.191259640102828,7.0,54.53259257676155,1.5289096374741905e-13
